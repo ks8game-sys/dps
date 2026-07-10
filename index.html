@@ -396,8 +396,8 @@ document.querySelectorAll('.fxbtn').forEach(b=>b.addEventListener('click',()=>{ 
 let builds={A:null,B:null};
 function saveBuild(s){builds[s]=compute();renderCmp();save();}
 function renderCmp(){
-  el('scA').textContent=builds.A?jp(builds.A):'—';
-  el('scB').textContent=builds.B?jp(builds.B):'—';
+  el('scA').textContent=builds.A?jpSI(builds.A):'—';
+  el('scB').textContent=builds.B?jpSI(builds.B):'—';
   const d=el('delta');
   if(builds.A&&builds.B&&builds.A>0){
     const pct=(builds.B/builds.A-1)*100;
