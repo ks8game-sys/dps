@@ -71,8 +71,7 @@
   .bar .full{display:block;font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums;line-height:1.2}
   /* 数字の輝き・電気エフェクト（大きさで段階変化） */
   .scWrap{display:inline-flex;align-items:center;gap:5px;justify-content:flex-end}
-  .bolt{width:12px;height:20px;flex:none;color:var(--tc,#8fa);opacity:0}
-  .bolt svg{display:block;width:100%;height:100%;fill:currentColor;filter:drop-shadow(0 0 4px var(--tc))}
+  .bolt{font-size:15px;line-height:1;flex:none;opacity:0;filter:drop-shadow(0 0 5px var(--tc))}
   .sc.lv0{text-shadow:0 0 2px rgba(255,255,255,.12)}
   .sc.lv1,.sc.lv2{animation:glowpulse 1.7s ease-in-out infinite}
   .sc.lv3,.sc.lv4{animation:glowpulse 1.5s ease-in-out infinite, elecbuzz .5s steps(1) infinite}
@@ -84,7 +83,32 @@
   @keyframes elecbuzz{0%,17%,19%,58%,60%,100%{filter:brightness(1)}18%{filter:brightness(1.65)}59%{filter:brightness(1.5)}82%{filter:brightness(1.75)}}
   @keyframes flick{0%,40%{opacity:.2}45%,55%{opacity:1}60%,100%{opacity:.35}}
   @keyframes huepulse{0%{filter:hue-rotate(0) brightness(1.2);text-shadow:0 0 8px var(--tc),0 0 18px var(--tc)}50%{filter:hue-rotate(180deg) brightness(1.5);text-shadow:0 0 12px var(--tc),0 0 26px var(--tc),0 0 36px var(--tc)}100%{filter:hue-rotate(360deg) brightness(1.2);text-shadow:0 0 8px var(--tc),0 0 18px var(--tc)}}
-  @media (prefers-reduced-motion: reduce){.sc.lv1,.sc.lv2,.sc.lv3,.sc.lv4,.sc.lv5,.sc.lv6{animation:none}.scWrap .bolt{animation:none}}
+  /* ❄️ 氷：凍りつく */
+  .sc.fxice{color:#9be8ff;animation:iceGlow 2.6s ease-in-out infinite}
+  @keyframes iceGlow{0%,100%{text-shadow:0 0 4px #cdf3ff,0 0 10px #6fd0ff}45%{text-shadow:0 0 3px #ffffff,0 0 8px #bfefff,0 0 16px #8fe3ff}55%{text-shadow:0 0 10px #ffffff,0 0 18px #bfefff,0 0 26px #4fb8ff}}
+  /* 🔥 炎：燃える */
+  .sc.fxfire{color:#ff9a3c;animation:fireGlow .85s ease-in-out infinite}
+  @keyframes fireGlow{
+    0%{text-shadow:0 -1px 4px #ffd23a,0 0 10px #ff7a2f,0 0 18px #ff3b1f;filter:brightness(1.05)}
+    25%{text-shadow:0 -2px 7px #ffe15a,0 0 13px #ff8a3a,0 0 22px #ff3b1f;filter:brightness(1.22)}
+    50%{text-shadow:0 -1px 5px #ffcf3a,0 0 9px #ff6a2f,0 0 15px #ff2f1f;filter:brightness(.98)}
+    75%{text-shadow:0 -3px 8px #ffe887,0 0 15px #ff8a3a,0 0 26px #ff3b1f;filter:brightness(1.28)}
+    100%{text-shadow:0 -1px 4px #ffd23a,0 0 10px #ff7a2f,0 0 18px #ff3b1f;filter:brightness(1.05)}}
+  /* 🛡️ 硬質：メタルで硬くなる（クロームの光沢が走る） */
+  .sc.fxmetal{
+    background:linear-gradient(100deg,#7f8aa0 0%,#c9d3e2 38%,#ffffff 50%,#c9d3e2 62%,#7f8aa0 100%);
+    background-size:250% 100%;-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;color:transparent;text-shadow:none;
+    filter:drop-shadow(0 1px 0 #566073) drop-shadow(0 0 1px #2a3040);
+    animation:metalSweep 2.6s linear infinite}
+  @keyframes metalSweep{0%{background-position:180% 0}100%{background-position:-80% 0}}
+  @media (prefers-reduced-motion: reduce){.sc{animation:none!important}.scWrap .bolt{animation:none}}
+  /* エフェクト選択ボタン */
+  .fxrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .fxbtn{height:46px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);
+    color:var(--txt);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;padding:0}
+  .fxbtn.on{border-color:var(--accent2);background:rgba(91,140,255,.22);color:#fff}
+  .fxbtn:active{transform:scale(.97)}
   .btnlink{flex:1;height:48px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);
     border-radius:12px;background:var(--panel2);color:var(--txt);font-size:13px;font-weight:700;text-decoration:none}
   .btnlink:active{transform:scale(.98)}
@@ -123,6 +147,17 @@
     <div class="toggle">
       <label>ボス戦モード（ボスダメを乗せる）</label>
       <span class="sw"><input type="checkbox" id="tBoss"><span class="sl"></span></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>エフェクト</h2>
+    <p class="cap">火力指数の演出を選べます。「自動」は数字の大きさで色＋電気が変わります。</p>
+    <div class="fxrow">
+      <button class="fxbtn" data-fx="auto">⚡自動</button>
+      <button class="fxbtn" data-fx="ice">❄️氷</button>
+      <button class="fxbtn" data-fx="fire">🔥炎</button>
+      <button class="fxbtn" data-fx="metal">🛡️硬質</button>
     </div>
   </div>
 
@@ -188,7 +223,7 @@
   <span class="lb">火力指数</span>
   <span style="text-align:right;min-width:0">
     <span class="scWrap" id="scWrap">
-      <span class="bolt"><svg viewBox="0 0 24 40"><path d="M14 0 L3 23 L11 23 L8 40 L22 15 L13 15 Z"/></svg></span>
+      <span class="bolt" id="fxIcon"></span>
       <span class="sc" id="totalFull">—</span>
     </span>
     <span class="full" id="total"></span>
@@ -292,15 +327,26 @@ const TIERS=[
   [2e13,'#ff8a3c', 5], // 20兆〜: オレンジ（強電気）
   [1e14,'#ff4d6d', 6], // 100兆〜: 赤レインボー（最大）
 ];
+let fx='auto'; // auto / ice / fire / metal
 function applyTier(total){
-  let tc='#c7cce0', lv=0;
-  if(total>0){ for(const[m,c,l]of TIERS){ if(total>=m){tc=c;lv=l;} } }
-  const sc=el('totalFull'), wrap=el('scWrap');
+  const sc=el('totalFull'), wrap=el('scWrap'), icon=el('fxIcon');
+  let tc, cls, showIcon, ic, fast=false;
+  if(fx==='ice'){        tc='#9be8ff'; cls='sc fxice';   ic='❄️'; showIcon=true; }
+  else if(fx==='fire'){  tc='#ff9a3c'; cls='sc fxfire';  ic='🔥'; showIcon=true; fast=true; }
+  else if(fx==='metal'){ tc='#cfd8e6'; cls='sc fxmetal'; ic='🛡️'; showIcon=true; }
+  else { // auto: 大きさで色＋電気
+    let lv=0; tc='#c7cce0';
+    if(total>0){ for(const[m,c,l]of TIERS){ if(total>=m){tc=c;lv=l;} } }
+    cls='sc lv'+lv; ic='⚡'; showIcon=lv>=3; fast=lv>=5;
+  }
   sc.style.setProperty('--tc',tc);
   wrap.style.setProperty('--tc',tc);
-  sc.className='sc lv'+lv;
-  wrap.className='scWrap'+(lv>=3?' e':'')+(lv>=5?' e2':'');
+  sc.className=cls;
+  icon.textContent=showIcon?ic:'';
+  wrap.className='scWrap'+(showIcon?' e':'')+(fast?' e2':'');
 }
+function markFx(){ document.querySelectorAll('.fxbtn').forEach(b=>b.classList.toggle('on',b.dataset.fx===fx)); }
+document.querySelectorAll('.fxbtn').forEach(b=>b.addEventListener('click',()=>{ fx=b.dataset.fx; markFx(); compute(); save(); }));
 
 // ===== ビルド比較 =====
 let builds={A:null,B:null};
@@ -320,7 +366,7 @@ function renderCmp(){
 const KEY='pyupyu_dps_v1';
 function save(){
   try{
-    const data={f:{},t:{},b:builds,cm:el('critMode').value};
+    const data={f:{},t:{},b:builds,cm:el('critMode').value,fx:fx};
     ALLKEYS.forEach(k=>data.f[k]=el('f_'+k).value);
     ['tBoss','tPursuit','tSkill','tAlly'].forEach(t=>data.t[t]=el(t).checked);
     localStorage.setItem(KEY,JSON.stringify(data));
@@ -333,6 +379,7 @@ function restore(){
     if(d.f)ALLKEYS.forEach(k=>{if(d.f[k]!=null)el('f_'+k).value=d.f[k];});
     if(d.t)Object.keys(d.t).forEach(t=>{if(el(t))el(t).checked=d.t[t];});
     if(d.cm)el('critMode').value=d.cm;
+    if(d.fx)fx=d.fx;
     if(d.b)builds=d.b;
   }catch(e){}
 }
@@ -414,7 +461,7 @@ function copyPrompt(){
   }
 }
 
-restore();compute();renderCmp();
+restore();markFx();compute();renderCmp();
 </script>
 </body>
 </html>
