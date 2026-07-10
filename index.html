@@ -13,7 +13,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   body{margin:0;background:var(--bg);color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
-    line-height:1.5;padding-bottom:82px}
+    line-height:1.5;padding-bottom:108px}
   .wrap{max-width:640px;margin:0 auto;padding:14px 12px 20px}
   h1{font-size:18px;margin:4px 0 2px}
   .lead{color:var(--sub);font-size:12px;margin:0 0 14px}
@@ -36,8 +36,8 @@
   details[open]>summary::after{content:"▲"}
   details .inner{border:1px solid var(--line);border-top:none;border-radius:0 0 12px 12px;
     padding:4px 12px 10px;margin-top:-6px;background:var(--panel)}
-  .toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
-  .toggle label{font-size:14px}
+  .toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 0;cursor:pointer}
+  .toggle>span:first-child{font-size:14px}
   .sw{position:relative;width:50px;height:30px;flex:none}
   .sw input{opacity:0;width:0;height:0}
   .sl{position:absolute;inset:0;background:var(--panel2);border:1px solid var(--line);border-radius:30px;transition:.15s}
@@ -102,11 +102,29 @@
     filter:drop-shadow(0 1px 0 #566073) drop-shadow(0 0 1px #2a3040);
     animation:metalSweep 2.6s linear infinite}
   @keyframes metalSweep{0%{background-position:180% 0}100%{background-position:-80% 0}}
+  /* 🍃 風：そよぐ */
+  .sc.fxwind{color:#86e59c;animation:windGlow 2.2s ease-in-out infinite}
+  @keyframes windGlow{0%,100%{text-shadow:0 0 4px #bfffcf,0 0 10px #7fe0a0;transform:skewX(0)}50%{text-shadow:0 0 7px #d8ffe6,0 0 16px #86e59c;transform:skewX(-2.5deg)}}
+  /* ⚡ 雷 */
+  .sc.fxthunder{color:#ffe14a;animation:glowpulse 1.2s ease-in-out infinite, elecbuzz .3s steps(1) infinite}
+  /* ✨ 光：神々しく輝く */
+  .sc.fxholy{color:#fff2b0;animation:holyGlow 2s ease-in-out infinite}
+  @keyframes holyGlow{0%,100%{text-shadow:0 0 6px #fff,0 0 14px #ffe9a0,0 0 24px #ffd24a;filter:brightness(1.1)}50%{text-shadow:0 0 12px #fff,0 0 26px #fff0b0,0 0 42px #ffcf5a;filter:brightness(1.42)}}
+  /* 🌌 闇：ゆらぐ暗黒オーラ */
+  .sc.fxdark{color:#c3a3ff;animation:darkGlow 1.7s ease-in-out infinite}
+  @keyframes darkGlow{0%,100%{text-shadow:0 0 6px #9a5bff,0 0 14px #5a2b9a;filter:brightness(1)}44%{filter:brightness(.76)}50%{text-shadow:0 0 12px #b98bff,0 0 24px #6a2bd0,0 0 36px #3a1080;filter:brightness(1.18)}}
+  /* ☠️ 毒：ぶくぶく泡立つ */
+  .sc.fxpoison{color:#c4ff4a;animation:poisonGlow 1.4s ease-in-out infinite}
+  @keyframes poisonGlow{0%,100%{text-shadow:0 0 5px #d4ff6a,0 0 12px #7fd020;transform:translateY(0)}30%{transform:translateY(-1px)}50%{text-shadow:0 0 9px #eaff9a,0 0 18px #9be020,0 0 26px #5aa010;transform:translateY(1px)}70%{transform:translateY(-1px)}}
+  /* 👑 神：虹色に輝く */
+  .sc.fxrainbow{color:#ff5db1;animation:huepulse 2.6s linear infinite}
+  /* 無 */
+  .sc.fxplain{text-shadow:0 0 2px rgba(255,255,255,.12)}
   @media (prefers-reduced-motion: reduce){.sc{animation:none!important}.scWrap .bolt{animation:none}}
   /* エフェクト選択ボタン */
-  .fxrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-  .fxbtn{height:46px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);
-    color:var(--txt);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;padding:0}
+  .fxrow{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .fxbtn{height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);
+    color:var(--txt);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;padding:0}
   .fxbtn.on{border-color:var(--accent2);background:rgba(91,140,255,.22);color:#fff}
   .fxbtn:active{transform:scale(.97)}
   .btnlink{flex:1;height:48px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);
@@ -144,20 +162,26 @@
   </div>
 
   <div class="card">
-    <div class="toggle">
-      <label>ボス戦モード（ボスダメを乗せる）</label>
+    <label class="toggle">
+      <span>ボス戦モード（ボスダメを乗せる）</span>
       <span class="sw"><input type="checkbox" id="tBoss"><span class="sl"></span></span>
-    </div>
+    </label>
   </div>
 
   <div class="card">
-    <h2>エフェクト</h2>
-    <p class="cap">火力指数の演出を選べます。「自動」は数字の大きさで色＋電気が変わります。</p>
+    <h2>エフェクト（属性）</h2>
+    <p class="cap">「自動」は数字の桁（k→m→g→t→p→e→z→y）が上がるごとに属性が進化します：風→炎→雷→氷→光→闇→毒→神。手動で固定もできます。</p>
     <div class="fxrow">
-      <button class="fxbtn" data-fx="auto">⚡自動</button>
-      <button class="fxbtn" data-fx="ice">❄️氷</button>
+      <button class="fxbtn" data-fx="auto">自動</button>
+      <button class="fxbtn" data-fx="wind">🍃風</button>
       <button class="fxbtn" data-fx="fire">🔥炎</button>
-      <button class="fxbtn" data-fx="metal">🛡️硬質</button>
+      <button class="fxbtn" data-fx="thunder">⚡雷</button>
+      <button class="fxbtn" data-fx="ice">❄️氷</button>
+      <button class="fxbtn" data-fx="holy">✨光</button>
+      <button class="fxbtn" data-fx="dark">🌌闇</button>
+      <button class="fxbtn" data-fx="poison">☠️毒</button>
+      <button class="fxbtn" data-fx="rainbow">👑神</button>
+      <button class="fxbtn" data-fx="metal">🛡️硬</button>
     </div>
   </div>
 
@@ -200,9 +224,9 @@
   <details>
     <summary>詳細設定（迷ったら触らなくてOK）</summary>
     <div class="inner">
-      <div class="toggle"><label>属性追撃を火力に含める</label><span class="sw"><input type="checkbox" id="tPursuit" checked><span class="sl"></span></span></div>
-      <div class="toggle"><label>スキル火力を含める</label><span class="sw"><input type="checkbox" id="tSkill" checked><span class="sl"></span></span></div>
-      <div class="toggle"><label>仲間火力を含める</label><span class="sw"><input type="checkbox" id="tAlly" checked><span class="sl"></span></span></div>
+      <label class="toggle"><span>属性追撃を火力に含める</span><span class="sw"><input type="checkbox" id="tPursuit" checked><span class="sl"></span></span></label>
+      <label class="toggle"><span>スキル火力を含める</span><span class="sw"><input type="checkbox" id="tSkill" checked><span class="sl"></span></span></label>
+      <label class="toggle"><span>仲間火力を含める</span><span class="sw"><input type="checkbox" id="tAlly" checked><span class="sl"></span></span></label>
       <div style="font-size:13px;margin-top:6px">会心ダメの読み方</div>
       <select id="critMode">
         <option value="total">760% = 通常の7.6倍（合計倍率）</option>
@@ -227,6 +251,7 @@
       <span class="sc" id="totalFull">—</span>
     </span>
     <span class="full" id="total"></span>
+    <span class="full" id="totalSI"></span>
   </span>
 </div></div>
 
@@ -291,6 +316,13 @@ function jp(n){
 }
 // 漢字を使わないカンマ区切りの数字表記
 function jpFull(n){ if(!isFinite(n)||n<=0)return''; return Math.round(n).toLocaleString('en-US'); }
+// k / m / g / t ... の省略表記（SI接頭辞）
+function jpSI(n){
+  if(!isFinite(n)||n<=0)return'';
+  const u=[[1e24,'y'],[1e21,'z'],[1e18,'e'],[1e15,'p'],[1e12,'t'],[1e9,'g'],[1e6,'m'],[1e3,'k']];
+  for(const[x,s]of u){ if(n>=x) return (n/x).toFixed(2).replace(/\.00$/,'')+s; }
+  return Math.round(n).toString();
+}
 function critMult(cr,cd){
   const p=cr/100, mode=document.getElementById('critMode').value;
   const bonus=mode==='total'?(cd/100-1):(cd/100);
@@ -303,15 +335,17 @@ function compute(){
   const boss=el('tBoss').checked, pur=el('tPursuit').checked, uS=el('tSkill').checked, uA=el('tAlly').checked;
   let common=(1+num('dm_el')/100)*(1+num('dm_tot')/100)*(1+num('el_str')/100);
   if(boss)common*=(1+num('dm_bs')/100);
-  if(pur)common*=(1+num('el_pur')/100);
-  const pN=atk*(1+num('dm_n')/100)*common*critMult(num('cr_n'),num('cd_n'))*(num('as_n')/100 || 1);
-  const pS=atk*(1+num('dm_s')/100)*common*critMult(num('cr_s'),num('cd_s'))*(num('as_s')/100 || 1);
-  const pA=atk*(1+num('dm_a')/100)*common*critMult(num('cr_a'),num('cd_a'))*(num('as_a')/100 || 1);
-  const total=pN+(uS?pS:0)+(uA?pA:0);
+  const spd=k=>{const v=num(k)/100;return v||1;};
+  const pN=atk*(1+num('dm_n')/100)*common*critMult(num('cr_n'),num('cd_n'))*spd('as_n');
+  const pS=atk*(1+num('dm_s')/100)*common*critMult(num('cr_s'),num('cd_s'))*spd('as_s');
+  const pA=atk*(1+num('dm_a')/100)*common*critMult(num('cr_a'),num('cd_a'))*spd('as_a');
+  const pE=atk*(num('el_pur')/100)*common*critMult(num('cr_n'),num('cd_n'))*spd('as_n'); // 属性追撃
+  const total=pN+(uS?pS:0)+(uA?pA:0)+(pur?pE:0);
   el('totalFull').innerHTML = total>0 ? jpFull(total)+' <small>pt</small>' : '—';
   el('total').textContent = total>0 ? jp(total)+' pt' : '';
+  el('totalSI').textContent = total>0 ? jpSI(total)+' pt' : '';
   applyTier(total);
-  el('breakdown').innerHTML=[['通常攻撃',pN],['スキル',uS?pS:0],['仲間',uA?pA:0]]
+  el('breakdown').innerHTML=[['通常攻撃',pN],['スキル',uS?pS:0],['仲間',uA?pA:0],['属性',pur?pE:0]]
     .map(([l,v])=>`<div class="l">${l}</div><div class="v">${jp(v)}（${total>0?Math.round(v/total*100):0}%）<br><span style="font-size:11px;color:var(--sub)">${jpFull(v)}</span></div>`).join('');
   return total;
 }
@@ -327,23 +361,33 @@ const TIERS=[
   [2e13,'#ff8a3c', 5], // 20兆〜: オレンジ（強電気）
   [1e14,'#ff4d6d', 6], // 100兆〜: 赤レインボー（最大）
 ];
-let fx='auto'; // auto / ice / fire / metal
+let fx='auto';
+// 属性の見た目定義
+const ATTR={
+  plain:  {c:'#c7cce0', cls:'fxplain',   ic:'',   e:false},
+  wind:   {c:'#86e59c', cls:'fxwind',    ic:'🍃', e:true},
+  fire:   {c:'#ff8a3a', cls:'fxfire',    ic:'🔥', e:true, e2:true},
+  thunder:{c:'#ffe14a', cls:'fxthunder', ic:'⚡', e:true, e2:true},
+  ice:    {c:'#9be8ff', cls:'fxice',     ic:'❄️', e:true},
+  holy:   {c:'#fff2b0', cls:'fxholy',    ic:'✨', e:true},
+  dark:   {c:'#c3a3ff', cls:'fxdark',    ic:'🌌', e:true, e2:true},
+  poison: {c:'#c4ff4a', cls:'fxpoison',  ic:'☠️', e:true},
+  rainbow:{c:'#ff5db1', cls:'fxrainbow', ic:'👑', e:true, e2:true},
+  metal:  {c:'#cfd8e6', cls:'fxmetal',   ic:'🛡️', e:true},
+};
+// 桁（k/m/g/t/…）が変わるごとに属性が進化（自動モード）
+const BAND=[[0,'plain'],[1e3,'wind'],[1e6,'fire'],[1e9,'thunder'],[1e12,'ice'],[1e15,'holy'],[1e18,'dark'],[1e21,'poison'],[1e24,'rainbow']];
 function applyTier(total){
+  let key='plain';
+  if(fx==='auto'){ if(total>0){ for(const[m,k]of BAND){ if(total>=m) key=k; } } }
+  else key=fx;
+  const a=ATTR[key]||ATTR.plain;
   const sc=el('totalFull'), wrap=el('scWrap'), icon=el('fxIcon');
-  let tc, cls, showIcon, ic, fast=false;
-  if(fx==='ice'){        tc='#9be8ff'; cls='sc fxice';   ic='❄️'; showIcon=true; }
-  else if(fx==='fire'){  tc='#ff9a3c'; cls='sc fxfire';  ic='🔥'; showIcon=true; fast=true; }
-  else if(fx==='metal'){ tc='#cfd8e6'; cls='sc fxmetal'; ic='🛡️'; showIcon=true; }
-  else { // auto: 大きさで色＋電気
-    let lv=0; tc='#c7cce0';
-    if(total>0){ for(const[m,c,l]of TIERS){ if(total>=m){tc=c;lv=l;} } }
-    cls='sc lv'+lv; ic='⚡'; showIcon=lv>=3; fast=lv>=5;
-  }
-  sc.style.setProperty('--tc',tc);
-  wrap.style.setProperty('--tc',tc);
-  sc.className=cls;
-  icon.textContent=showIcon?ic:'';
-  wrap.className='scWrap'+(showIcon?' e':'')+(fast?' e2':'');
+  sc.style.setProperty('--tc',a.c);
+  wrap.style.setProperty('--tc',a.c);
+  sc.className='sc '+a.cls;
+  icon.textContent=a.e?a.ic:'';
+  wrap.className='scWrap'+(a.e?' e':'')+(a.e2?' e2':'');
 }
 function markFx(){ document.querySelectorAll('.fxbtn').forEach(b=>b.classList.toggle('on',b.dataset.fx===fx)); }
 document.querySelectorAll('.fxbtn').forEach(b=>b.addEventListener('click',()=>{ fx=b.dataset.fx; markFx(); compute(); save(); }));
