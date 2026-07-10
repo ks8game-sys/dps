@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ピューピュースライム 火力指数計算機（試作）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js"></script>
+<style>
+  :root{
+    --bg:#12131a; --panel:#1b1d28; --panel2:#232636; --line:#333750;
+    --txt:#e8eaf2; --sub:#9aa0bd; --accent:#ffb020; --accent2:#5b8cff;
+    --good:#37d67a; --bad:#ff5c72; --chip:#2b2f45;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+    line-height:1.5;-webkit-text-size-adjust:100%}
+  .wrap{max-width:860px;margin:0 auto;padding:16px 14px 60px}
+  h1{font-size:20px;margin:6px 0 2px}
+  .lead{color:var(--sub);font-size:13px;margin:0 0 16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+  .card h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .badge{font-size:11px;background:var(--chip);color:var(--sub);border-radius:999px;padding:2px 9px}
+  .drop{border:2px dashed var(--line);border-radius:12px;padding:18px;text-align:center;color:var(--sub);
+    font-size:13px;cursor:pointer;transition:.15s;background:var(--panel2)}
+  .drop:hover{border-color:var(--accent2);color:var(--txt)}
+  .drop.busy{opacity:.6;pointer-events:none}
+  #ocrStatus{font-size:12px;color:var(--accent);margin-top:8px;min-height:16px}
+  .grp{margin-top:6px}
+  .grp h3{font-size:12px;color:var(--sub);margin:14px 0 6px;letter-spacing:.02em}
+  .row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  .row label{flex:1;font-size:13px;color:var(--txt)}
+  .row .unit{color:var(--sub);font-size:12px;width:14px;text-align:left}
+  .row input{width:150px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+    border-radius:8px;padding:7px 9px;font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
+  .row input:focus{outline:none;border-color:var(--accent2)}
+  .row.key input{border-color:#4a5488}
+  .toggles{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:4px}
+  .toggles label{font-size:13px;color:var(--txt);display:flex;align-items:center;gap:6px;cursor:pointer}
+  select,button{font-family:inherit}
+  select{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:6px 8px;font-size:13px}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  button{background:var(--accent2);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:14px;
+    font-weight:600;cursor:pointer;transition:.12s}
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:var(--chip);color:var(--txt)}
+  button.warn{background:var(--chip);color:var(--sub)}
+  .result{display:flex;flex-direction:column;gap:4px;align-items:center;padding:8px 0 4px}
+  .score{font-size:32px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+  .score small{font-size:14px;color:var(--sub);font-weight:600}
+  .brk{display:grid;grid-template-columns:1fr auto;gap:2px 12px;margin-top:12px;font-size:13px}
+  .brk .l{color:var(--sub)}
+  .brk .v{text-align:right;font-variant-numeric:tabular-nums}
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+  .slot{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
+  .slot .nm{font-size:12px;color:var(--sub)}
+  .slot .sc{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+  .delta{text-align:center;font-size:16px;font-weight:700;margin-top:10px;min-height:22px}
+  .delta.up{color:var(--good)} .delta.down{color:var(--bad)}
+  .note{font-size:12px;color:var(--sub);margin-top:10px}
+  .note code{background:var(--panel2);padding:1px 5px;border-radius:5px}
+  details{margin-top:8px}
+  summary{cursor:pointer;color:var(--accent2);font-size:13px}
+  .foot{color:var(--sub);font-size:11px;text-align:center;margin-top:22px}
+  @media(max-width:520px){.row input{width:120px}.score{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚔️ ピューピュースライム 火力指数計算機</h1>
+  <p class="lead">「属性詳細」のスクショを入れると、通常・スキル・仲間の火力を合成して1つのスコアにします。
+  公式の計算式は非公開のため<b>絶対DPSではなく、装備を比べるための相対スコア（概算）</b>です。</p>
+
+  <div class="card">
+    <h2>① スクショから読み取り <span class="badge">OCR・試験的</span></h2>
+    <div id="drop" class="drop">
+      画像をタップ／ドラッグして選択（属性詳細の画面・複数枚OK）<br>
+      <span style="font-size:11px">※ゲームフォントは読み違えることがあります。下の欄で直せます。</span>
+      <input id="file" type="file" accept="image/*" multiple hidden>
+    </div>
+    <div id="ocrStatus"></div>
+  </div>
+
+  <div class="card">
+    <h2>② ステータス <span class="badge">読み取り結果は手直しできます</span></h2>
+    <div id="fields"></div>
+  </div>
+
+  <div class="card">
+    <h2>③ 計算の前提 <span class="badge">迷ったら初期値のままでOK</span></h2>
+    <div class="toggles">
+      <label><input type="checkbox" id="tBoss"> ボス戦モード（ボスダメを乗せる）</label>
+      <label><input type="checkbox" id="tPursuit" checked> 属性追撃を火力に含める</label>
+      <label><input type="checkbox" id="tSkill" checked> スキル火力を含める</label>
+      <label><input type="checkbox" id="tAlly" checked> 仲間火力を含める</label>
+    </div>
+    <div style="margin-top:12px;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      会心ダメの読み方：
+      <select id="critMode">
+        <option value="total">760% = 通常の7.6倍（合計倍率）</option>
+        <option value="add">760% = 通常＋760%（加算ボーナス）</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>④ 火力指数</h2>
+    <div class="result">
+      <div class="score" id="total">—</div>
+      <div style="font-size:12px;color:var(--sub)">数値が大きいほど火力が高い（相対比較用の目安）</div>
+    </div>
+    <div class="brk" id="breakdown"></div>
+    <details>
+      <summary>計算の中身を見る</summary>
+      <div class="note" id="explain"></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>⑤ ビルド比較（装備の前後で何%変わる？）</h2>
+    <div class="btnrow">
+      <button class="ghost" onclick="saveBuild('A')">今の数値を「前(A)」に保存</button>
+      <button class="ghost" onclick="saveBuild('B')">今の数値を「後(B)」に保存</button>
+    </div>
+    <div class="cmp">
+      <div class="slot"><div class="nm">前（A）</div><div class="sc" id="scA">—</div></div>
+      <div class="slot"><div class="nm">後（B）</div><div class="sc" id="scB">—</div></div>
+    </div>
+    <div class="delta" id="delta"></div>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="warn" onclick="clearAll()">入力をクリア</button>
+    </div>
+  </div>
+
+  <div class="foot">試作版 v0.1 ／ 計算式はユーザー提供の予想モデル。実際のダメージと突き合わせて調整する前提です。</div>
+</div>
+
+<script>
+// ===== ステータス定義（ピューピュースライム 属性詳細）=====
+// key: 内部ID / label: 表示名 / aliases: OCRでのゆらぎ吸収 / off: 火力計算に使う / raw: 実数(%でない)
+const STATS = [
+  {g:"基本", items:[
+    {k:"atk",   l:"攻撃",            raw:true,  off:true,  al:["攻撃"]},
+    {k:"hp",    l:"生命",            raw:true,  off:false, al:["生命"]},
+    {k:"def",   l:"防御",            raw:true,  off:false, al:["防御"]},
+    {k:"as_n",  l:"攻撃速度",         off:true,  al:["攻撃速度"]},
+    {k:"as_s",  l:"スキルチャージ速度", off:true, al:["スキルチャージ速度","スキルチャージ"]},
+    {k:"as_a",  l:"仲間攻撃速度",      off:true,  al:["仲間攻撃速度"]},
+    {k:"cr_n",  l:"通常攻撃会心率",    off:true,  al:["通常攻撃会心率","通常会心率"]},
+    {k:"cr_s",  l:"スキル会心率",      off:true,  al:["スキル会心率"]},
+    {k:"cr_a",  l:"仲間会心率",        off:true,  al:["仲間会心率"]},
+    {k:"cd_n",  l:"通常攻撃会心ダメ",  off:true,  al:["通常攻撃会心ダメ","通常会心ダメ"]},
+    {k:"cd_s",  l:"スキル会心ダメ",    off:true,  al:["スキル会心ダメ"]},
+    {k:"cd_a",  l:"仲間会心ダメ",      off:true,  al:["仲間会心ダメ"]},
+  ]},
+  {g:"ダメージ", items:[
+    {k:"dm_n",  l:"通常攻撃ダメ",      off:true,  al:["通常攻撃ダメ"]},
+    {k:"dm_s",  l:"スキルダメ",        off:true,  al:["スキルダメ"]},
+    {k:"dm_a",  l:"仲間ダメ",          off:true,  al:["仲間ダメ"]},
+    {k:"dm_el", l:"属性ダメ",          off:true,  al:["属性ダメ"]},
+    {k:"dm_bs", l:"ボスダメ",          off:true,  al:["ボスダメ"]},
+    {k:"dm_tot",l:"総合ダメ増加",      off:true,  al:["総合ダメ増加","総合ダメージ増加"]},
+    {k:"el_pur",l:"属性追撃",          off:true,  al:["属性追撃率","属性追撃"]},
+    {k:"el_str",l:"属性強化",          off:true,  al:["属性強化"]},
+  ]},
+  {g:"その他（火力計算には使いません）", items:[
+    {k:"o_mv",  l:"移動速度",          off:false, al:["移動速度"]},
+    {k:"o_hps", l:"毎秒回復",          off:false, al:["毎秒回復"]},
+    {k:"o_heal",l:"回復効果",          off:false, al:["回復効果"]},
+    {k:"o_eva", l:"回避率",            off:false, al:["回避率"]},
+    {k:"o_evai",l:"回避無視",          off:false, al:["回避無視"]},
+    {k:"o_gd",  l:"ガード率",          off:false, al:["ガード率"]},
+    {k:"o_pvp", l:"PVPダメ",           off:false, al:["PVPダメ"]},
+  ]},
+];
+const BYKEY = {}; STATS.forEach(s=>s.items.forEach(it=>BYKEY[it.k]=it));
+
+// ===== フォーム描画 =====
+const fieldsEl = document.getElementById('fields');
+STATS.forEach(sec=>{
+  const h=document.createElement('h3'); h.textContent=sec.g; h.className=''; fieldsEl.appendChild(h);
+  sec.items.forEach(it=>{
+    const row=document.createElement('div'); row.className='row'+(it.off?' key':'');
+    const lab=document.createElement('label'); lab.textContent=it.l;
+    const inp=document.createElement('input'); inp.type='text'; inp.inputMode='decimal';
+    inp.id='f_'+it.k; inp.placeholder='0'; inp.addEventListener('input',compute);
+    const u=document.createElement('span'); u.className='unit'; u.textContent=it.raw?'':'%';
+    row.appendChild(lab); row.appendChild(inp); row.appendChild(u);
+    fieldsEl.appendChild(row);
+  });
+});
+
+// ===== ヘルパ =====
+function num(k){ const v=parseFloat((document.getElementById('f_'+k).value||'').replace(/,/g,'')); return isNaN(v)?0:v; }
+function setV(k,v){ const el=document.getElementById('f_'+k); if(el) el.value=v; }
+
+// 日本語の桁で大きい数を読みやすく（万億兆京垓）
+function jp(n){
+  if(!isFinite(n)||n===0) return '0';
+  const units=[[1e20,'垓'],[1e16,'京'],[1e12,'兆'],[1e8,'億'],[1e4,'万']];
+  for(const [u,name] of units){ if(n>=u) return (n/u).toFixed(2).replace(/\.00$/,'')+name; }
+  return Math.round(n).toLocaleString();
+}
+
+// ===== 計算モデル（ユーザー提供の予想式ベース）=====
+function critMult(cr, cd){
+  const p=cr/100; const mode=document.getElementById('critMode').value;
+  // total: 会心ダメ760% = クリは通常の7.6倍。加算ボーナス = 7.6-1 = 6.6
+  // add  : 会心ダメ760% = 通常+760% = 8.6倍。加算ボーナス = 7.6
+  const bonus = mode==='total' ? (cd/100 - 1) : (cd/100);
+  return 1 + p*Math.max(bonus,0);
+}
+function compute(){
+  const atk=num('atk');
+  const boss=document.getElementById('tBoss').checked;
+  const usePur=document.getElementById('tPursuit').checked;
+  const useSkill=document.getElementById('tSkill').checked;
+  const useAlly=document.getElementById('tAlly').checked;
+
+  // 全タイプ共通の乗算補正
+  let common=(1+num('dm_el')/100)*(1+num('dm_tot')/100)*(1+num('el_str')/100);
+  if(boss) common*=(1+num('dm_bs')/100);
+  if(usePur) common*=(1+num('el_pur')/100);
+
+  const pN=atk*(1+num('dm_n')/100)*common*critMult(num('cr_n'),num('cd_n'))*(num('as_n')/100);
+  const pS=atk*(1+num('dm_s')/100)*common*critMult(num('cr_s'),num('cd_s'))*(num('as_s')/100);
+  const pA=atk*(1+num('dm_a')/100)*common*critMult(num('cr_a'),num('cd_a'))*(num('as_a')/100);
+
+  const total=pN+(useSkill?pS:0)+(useAlly?pA:0);
+  document.getElementById('total').innerHTML = total>0 ? (jp(total)+' <small>pt</small>') : '—';
+
+  const bd=document.getElementById('breakdown');
+  const rows=[
+    ['通常攻撃 火力',pN],
+    ['スキル 火力',useSkill?pS:0],
+    ['仲間 火力',useAlly?pA:0],
+  ];
+  bd.innerHTML=rows.map(([l,v])=>`<div class="l">${l}</div><div class="v">${jp(v)}（${total>0?Math.round(v/total*100):0}%）</div>`).join('');
+
+  document.getElementById('explain').innerHTML =
+    `各タイプの火力 = 攻撃力 × (1+ダメ%) × 共通補正 × 会心倍率 × 速度<br>`+
+    `・共通補正 = (1+属性ダメ)×(1+総合ダメ増加)×(1+属性強化)${boss?'×(1+ボスダメ)':''}${usePur?'×(1+属性追撃)':''} = <code>×${common.toFixed(2)}</code><br>`+
+    `・会心倍率(通常) = <code>×${critMult(num('cr_n'),num('cd_n')).toFixed(3)}</code>／速度(通常) = <code>×${(num('as_n')/100).toFixed(2)}</code><br>`+
+    `※敵の防御力・スキル倍率は不明のため定数扱い。だから「絶対値」ではなく「相対比較」に使ってください。`;
+  return total;
+}
+
+// ===== ビルド比較 =====
+let builds={A:null,B:null};
+function saveBuild(slot){
+  builds[slot]=compute();
+  render();
+}
+function render(){
+  document.getElementById('scA').textContent = builds.A?jp(builds.A):'—';
+  document.getElementById('scB').textContent = builds.B?jp(builds.B):'—';
+  const d=document.getElementById('delta');
+  if(builds.A&&builds.B&&builds.A>0){
+    const pct=(builds.B/builds.A-1)*100;
+    d.textContent=(pct>=0?'▲ +':'▼ ')+pct.toFixed(1)+'%（A→B）';
+    d.className='delta '+(pct>=0?'up':'down');
+  }else{ d.textContent=''; d.className='delta'; }
+}
+function clearAll(){
+  document.querySelectorAll('#fields input').forEach(i=>i.value='');
+  compute();
+}
+
+// ===== OCR =====
+const drop=document.getElementById('drop'), file=document.getElementById('file'), st=document.getElementById('ocrStatus');
+drop.addEventListener('click',()=>file.click());
+drop.addEventListener('dragover',e=>{e.preventDefault();});
+drop.addEventListener('drop',e=>{e.preventDefault(); if(e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);});
+file.addEventListener('change',e=>{ if(e.target.files.length) handleFiles(e.target.files); });
+
+async function handleFiles(files){
+  if(typeof Tesseract==='undefined'){ st.textContent='OCRライブラリを読み込めませんでした。ネット接続を確認するか、手入力してください。'; return; }
+  drop.classList.add('busy'); let hitTotal=0;
+  try{
+    for(let i=0;i<files.length;i++){
+      st.textContent=`読み取り中… (${i+1}/${files.length})`;
+      const {data}=await Tesseract.recognize(files[i],'jpn+eng',{
+        logger:m=>{ if(m.status==='recognizing text') st.textContent=`読み取り中… (${i+1}/${files.length}) ${Math.round(m.progress*100)}%`; }
+      });
+      hitTotal+=parseLines(data.text);
+    }
+    st.textContent=`読み取り完了：${hitTotal}項目を自動入力しました。数値を確認して直してください。`;
+    compute();
+  }catch(err){
+    st.textContent='読み取りに失敗しました。手入力で進めてください。（'+err.message+'）';
+  }finally{ drop.classList.remove('busy'); }
+}
+
+// OCRテキストから「ラベル + 数値」を拾って対応欄へ
+function parseLines(text){
+  let hits=0;
+  const lines=text.split(/\r?\n/).map(s=>s.replace(/\s+/g,'')).filter(Boolean);
+  for(const line of lines){
+    // 数値（カンマ小数点対応）を末尾側から取得
+    const m=line.match(/(-?[\d,]+(?:\.\d+)?)\s*%?$/) || line.match(/(-?[\d,]+(?:\.\d+)?)/);
+    if(!m) continue;
+    const valStr=m[1].replace(/,/g,'');
+    // ラベル部分（数値を除いた頭）で一致を探す
+    const head=line.slice(0,m.index).length?line.slice(0,line.indexOf(m[1])):line;
+    let best=null,bestLen=0;
+    STATS.forEach(sec=>sec.items.forEach(it=>{
+      it.al.forEach(a=>{
+        const key=a.replace(/\s+/g,'');
+        if(line.includes(key) && key.length>bestLen){ best=it; bestLen=key.length; }
+      });
+    }));
+    if(best){
+      const cur=document.getElementById('f_'+best.k);
+      if(cur && !cur.value){ cur.value=valStr; hits++; }
+    }
+  }
+  return hits;
+}
+
+compute();
+</script>
+</body>
+</html>
