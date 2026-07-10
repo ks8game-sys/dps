@@ -66,8 +66,12 @@
     border-top:1px solid var(--line);backdrop-filter:blur(8px);z-index:10}
   .bar .in{max-width:640px;margin:0 auto;padding:9px 16px;display:flex;align-items:center;justify-content:space-between}
   .bar .lb{font-size:12px;color:var(--sub)}
-  .bar .sc{font-size:26px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
-  .bar .sc small{font-size:13px;color:var(--sub);font-weight:600}
+  .bar .sc{font-size:24px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+  .bar .sc small{font-size:12px;color:var(--sub);font-weight:600}
+  .bar .full{display:block;font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums;line-height:1.2}
+  .btnlink{flex:1;height:48px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);
+    border-radius:12px;background:var(--panel2);color:var(--txt);font-size:13px;font-weight:700;text-decoration:none}
+  .btnlink:active{transform:scale(.98)}
   .foot{color:var(--sub);font-size:11px;text-align:center;margin-top:8px}
 </style>
 </head>
@@ -84,6 +88,19 @@
     <textarea id="pasteBox" placeholder="ここに貼り付け"></textarea>
     <div class="btnrow"><button class="primary" onclick="parsePaste()">貼り付けた文字から自動入力</button></div>
     <div id="pasteMsg" class="cap" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <h2>🤖 AIで数字を読み取る</h2>
+    <p class="cap">スクショから数字を書き出すのはお使いのAIが得意です。①指示文をコピー→②AIを開いて貼り付け＆スクショ添付→③出た表をコピー→④上の「かんたん自動入力」に貼り付け。<br>
+    ※Webから画像を直接AIに送る／結果を自動で持ち帰ることはブラウザの制限でできないため、この半自動が無料での最短です。</p>
+    <div class="btnrow"><button class="primary" onclick="copyPrompt()">① 指示文をコピー</button></div>
+    <div class="btnrow" style="margin-top:8px">
+      <a class="btnlink" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini</a>
+      <a class="btnlink" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT</a>
+      <a class="btnlink" href="https://claude.ai/new" target="_blank" rel="noopener">Claude</a>
+    </div>
+    <div id="promptMsg" class="cap" style="margin-top:8px"></div>
   </div>
 
   <div class="card">
@@ -151,7 +168,13 @@
   <div class="foot">火力計算機 v1.0 ／ 計算式は予想モデル。実ダメージと突き合わせて調整できます。</div>
 </div>
 
-<div class="bar"><div class="in"><span class="lb">火力指数</span><span class="sc" id="total">—</span></div></div>
+<div class="bar"><div class="in">
+  <span class="lb">火力指数</span>
+  <span style="text-align:right">
+    <span class="sc" id="total">—</span>
+    <span class="full" id="totalFull"></span>
+  </span>
+</div></div>
 
 <script>
 // ===== 項目定義 =====
@@ -212,6 +235,8 @@ function jp(n){
   for(const[x,nm]of u){if(n>=x)return(n/x).toFixed(2).replace(/\.00$/,'')+nm;}
   return Math.round(n).toLocaleString();
 }
+// 漢字を使わないカンマ区切りの数字表記
+function jpFull(n){ if(!isFinite(n)||n<=0)return''; return Math.round(n).toLocaleString('en-US'); }
 function critMult(cr,cd){
   const p=cr/100, mode=document.getElementById('critMode').value;
   const bonus=mode==='total'?(cd/100-1):(cd/100);
@@ -230,8 +255,9 @@ function compute(){
   const pA=atk*(1+num('dm_a')/100)*common*critMult(num('cr_a'),num('cd_a'))*(num('as_a')/100 || 1);
   const total=pN+(uS?pS:0)+(uA?pA:0);
   el('total').innerHTML = total>0 ? jp(total)+' <small>pt</small>' : '—';
+  el('totalFull').textContent = total>0 ? jpFull(total)+' pt' : '';
   el('breakdown').innerHTML=[['通常攻撃',pN],['スキル',uS?pS:0],['仲間',uA?pA:0]]
-    .map(([l,v])=>`<div class="l">${l}</div><div class="v">${jp(v)}（${total>0?Math.round(v/total*100):0}%）</div>`).join('');
+    .map(([l,v])=>`<div class="l">${l}</div><div class="v">${jp(v)}（${total>0?Math.round(v/total*100):0}%）<br><span style="font-size:11px;color:var(--sub)">${jpFull(v)}</span></div>`).join('');
   return total;
 }
 function el(id){return document.getElementById(id);}
@@ -325,6 +351,27 @@ function parsePaste(){
   el('pasteMsg').textContent = hit>0
     ? `✅ ${hit}項目を自動入力しました。下で確認・修正できます。`
     : '⚠️ 項目を読み取れませんでした。「攻撃 288694592」や「| 攻撃 | 288,694,592 |」のような形で貼り付けてください。';
+}
+
+// ===== AI用の指示文をコピー =====
+const AI_PROMPT =
+'次の画像はスマホゲーム「ピューピュースライム」の「属性詳細」画面のスクショです。\n'+
+'表示されている項目名と数値をすべて読み取り、次の形式の表だけで出力してください（説明文は不要）。\n'+
+'| 項目 | 値 |\n|---|---|\n| 攻撃 | （値） |\n'+
+'数値は画面のとおり（%も付ける）。複数画像がある場合は重複する項目は1回だけにしてください。';
+function copyPrompt(){
+  const done=()=>{el('promptMsg').textContent='✅ 指示文をコピーしました。AIを開いて貼り付け、スクショを添付してください。';};
+  try{
+    navigator.clipboard.writeText(AI_PROMPT).then(done).catch(fallbackCopy);
+  }catch(e){ fallbackCopy(); }
+  function fallbackCopy(){
+    const ta=document.createElement('textarea'); ta.value=AI_PROMPT;
+    ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); done(); }
+    catch(e){ el('promptMsg').textContent='コピーできませんでした。この文をコピーして使ってください：\n'+AI_PROMPT; }
+    document.body.removeChild(ta);
+  }
 }
 
 restore();compute();renderCmp();
